@@ -4,6 +4,7 @@ namespace ICodeWP;
 
 use ICodeWP\EntityManager\PostTypeInterface;
 use ICodeWP\EntityManager\TaxonomyInterface;
+use ICodeWP\Service\Assets;
 use ICodeWP\Service\Template;
 use ICodeWP\Service\UserMessages;
 
@@ -39,12 +40,23 @@ class Kernel implements KernelInterface {
 		}
 	}
 
+	public function directory(): string {
+		return basename( $this->path() );
+	}
+
 	public function path(): string {
 		return $this->path;
 	}
 
-	public function directory(): string {
-		return basename( $this->path() );
+	public function url(): string {
+		switch ( $this->type() ) {
+			case 'plugin':
+				return plugin_dir_url( $this->path() );
+			case 'theme':
+				return get_theme_file_uri( $this->path() );
+			default:
+				return site_url( $this->path() );
+		}
 	}
 
 	public function namespace(): string {
@@ -162,6 +174,15 @@ class Kernel implements KernelInterface {
 
 			$this->taxonomies[ $name ] = new $fqcn( $this );
 		}
+	}
+
+	public function assets(): Assets {
+		static $assets;
+		return $assets ??= new Assets(
+			$this->path() . '/assets',
+			$this->url() . '/assets',
+			$this->version()
+		);
 	}
 
 	public function template(): Template {

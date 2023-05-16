@@ -4,6 +4,7 @@ namespace ICodeWP;
 
 use ICodeWP\EntityManager\PostTypeInterface;
 use ICodeWP\EntityManager\TaxonomyInterface;
+use ICodeWP\Service\Assets;
 use ICodeWP\Service\Template;
 use ICodeWP\Service\UserMessages;
 
@@ -23,9 +24,14 @@ use ICodeWP\Service\UserMessages;
  */
 interface KernelInterface {
 	/**
-	 * Return the app type (plugin, theme, service, api, etc.)
+	 * Return the app type (full app, plugin, theme, service, api, etc.)
 	 */
 	public function type(): string;
+
+	/**
+	 * Return the app directory name.
+	 */
+	public function directory(): string;
 
 	/**
 	 * Return the app absolute path.
@@ -33,9 +39,9 @@ interface KernelInterface {
 	public function path(): string;
 
 	/**
-	 * Return the app directory name.
+	 * Return the app url.
 	 */
-	public function directory(): string;
+	public function url(): string;
 
 	/**
 	 * Return the app base namespace.
@@ -120,7 +126,7 @@ interface KernelInterface {
 	 *
 	 * @return \ICodeWP\Service\Assets
 	 */
-	// public function assets(): Assets;
+	public function assets(): Assets;
 
 	/**
 	 * Return the template manager.
