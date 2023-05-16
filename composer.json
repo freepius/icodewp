@@ -1,0 +1,14 @@
+{
+    "name": "dromyco/icodewp",
+    "type": "wordpress-framework",
+    "autoload": {
+        "psr-4": {
+            "ICodeWP\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ICodeWP\\Tests\\": "tests/"
+        }
+    }
+}

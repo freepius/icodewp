@@ -1,0 +1,9 @@
+# ignore composer and node dependency directories
+vendor/
+node_modules/
+
+# ignore generated files
+src/Resources/assets/build
+
+# ignore some dev files
+*.code-workspace
