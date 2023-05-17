@@ -2,12 +2,6 @@
 
 namespace ICodeWP;
 
-use ICodeWP\EntityManager\PostTypeInterface;
-use ICodeWP\EntityManager\TaxonomyInterface;
-use ICodeWP\Service\Assets;
-use ICodeWP\Service\Template;
-use ICodeWP\Service\UserMessages;
-
 /**
  * Default implementation of the `KernelInterface`.
  * You can directly use this class as kernel of your app (or plugin, or theme).
@@ -17,27 +11,27 @@ use ICodeWP\Service\UserMessages;
  * @author     freepius
  */
 class Kernel implements KernelInterface {
+	use KernelTrait\Container\Parameters;
+	use KernelTrait\Container\PostTypes;
+	use KernelTrait\Container\Taxonomies;
+	use KernelTrait\Services;
+
 	protected readonly string $path;
-	protected array $parameters = array();
-	protected array $post_types = array();
-	protected array $taxonomies = array();
 
 	public function __construct( string $file ) {
 		$this->path = dirname( $file );
 
-		add_action( 'init', array( $this, 'init' ) );
-		add_action( 'admin_init', array( $this, 'init_admin' ) );
+		add_action( 'init', fn () => $this->init() );
+		add_action( 'admin_init', fn () => $this->admin_init() );
 	}
 
 	public function type(): string {
-		switch ( basename( dirname( $this->path() ) ) ) {
-			case 'plugins':
-				return 'plugin';
-			case 'themes':
-				return 'theme';
-			default:
-				return 'app';
-		}
+		static $type;
+		return $type ??= match ( basename( dirname( $this->path() ) ) ) {
+			'plugins' => 'plugin',
+			'themes'  => 'theme',
+			default   => 'app',
+		};
 	}
 
 	public function directory(): string {
@@ -49,19 +43,16 @@ class Kernel implements KernelInterface {
 	}
 
 	public function url(): string {
-		switch ( $this->type() ) {
-			case 'plugin':
-				return plugin_dir_url( $this->path() );
-			case 'theme':
-				return get_theme_file_uri( $this->path() );
-			default:
-				return site_url( $this->path() );
-		}
+		static $url;
+		return $url ??= match ( $this->type() ) {
+			'plugin' => plugin_dir_url( $this->path() ),
+			'theme'  => get_theme_file_uri( $this->path() ),
+			default  => site_url( $this->path() ),
+		};
 	}
 
 	public function namespace(): string {
 		static $namespace;
-
 		return $namespace ??=
 			// Basic CamelCase of the directory name.
 			// @todo Use a better algorithm, for example through the String Symfony component.
@@ -80,61 +71,14 @@ class Kernel implements KernelInterface {
 		return '1.0.0';
 	}
 
-	public function parameter( string $name, $new_value = null, bool $overwrite = false ): mixed {
-		if ( ! isset( $this->parameters[ $name ] ) || $overwrite ) {
-			$this->parameters[ $name ] = $new_value;
-		}
-
-		return $this->parameters[ $name ];
-	}
-
-	public function parameters( array $new_values = array(), bool $overwrite = false ): array {
-		if ( ! empty( $new_values ) ) {
-			foreach ( $new_values as $name => $value ) {
-				$this->parameter( $name, $value, $overwrite );
-			}
-		}
-
-		return $this->parameters;
-	}
-
-	public function post_type( string $name ): ?PostTypeInterface {
-		// Get first by short name, then by full name.
-		return $this->post_types[ $name ] ?? get_post_type_object( $name )->em ?? null;
-	}
-
-	public function taxonomy( string $name ): ?TaxonomyInterface {
-		// Get first by short name, then by full name.
-		return $this->taxonomies[ $name ] ?? get_taxonomy( $name )->em ?? null;
-	}
-
-	public function post_types( string ...$names ): array {
-		return array() === $names
-			? $this->post_types
-			: array_filter(
-				$this->post_types,
-				fn ( string $name ): bool => in_array( $name, $names, true ),
-				ARRAY_FILTER_USE_KEY
-			);
-	}
-
-	public function taxonomies( string ...$names ): array {
-		return array() === $names
-			? $this->taxonomies
-			: array_filter(
-				$this->taxonomies,
-				fn ( string $name ): bool => in_array( $name, $names, true ),
-				ARRAY_FILTER_USE_KEY
-			);
-	}
-
-	public function init(): void {
+	protected function init(): void {
 		$this->load_textdomains();
 		$this->load_post_types();
 		$this->load_taxonomies();
 	}
 
-	public function init_admin(): void {}
+	protected function admin_init(): void {
+	}
 
 	/**
 	 * Loads the internationalization files.
@@ -174,24 +118,5 @@ class Kernel implements KernelInterface {
 
 			$this->taxonomies[ $name ] = new $fqcn( $this );
 		}
-	}
-
-	public function assets(): Assets {
-		static $assets;
-		return $assets ??= new Assets(
-			$this->path() . '/assets',
-			$this->url() . '/assets',
-			$this->version()
-		);
-	}
-
-	public function template(): Template {
-		static $template;
-		return $template ??= new Template( $this->path() . 'templates/' );
-	}
-
-	public function user_messages(): UserMessages {
-		static $user_messages;
-		return $user_messages ??= new UserMessages( $this->prefix() . 'user_messages' );
 	}
 }
